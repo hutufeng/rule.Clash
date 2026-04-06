@@ -28,6 +28,16 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "*.localhost"
+    - "time.windows.com"
+    - "time.ntp.org"
+    - "+.stun.*.*"
+    - "stun.*.*.*"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
   use-system-hosts: true
   use-hosts: true
 
@@ -48,35 +58,11 @@ dns:
 
   # ── DNS 分流：只命中国外服务，其余全走 nameserver（国内）──────
   nameserver-policy:
-    "rule-set:OpenAI,rule-set:Anthropic,rule-set:Gemini,rule-set:Claude,rule-set:Copilot,rule-set:Bing,rule-set:GitHub,rule-set:GoogleFCM,rule-set:Telegram-domain,rule-set:YouTube,rule-set:Twitter,rule-set:Google-domain,rule-set:Microsoft-domain":
+    "rule-set:OpenAI,rule-set:Anthropic,rule-set:Gemini,rule-set:Claude,rule-set:Copilot,rule-set:Bing,rule-set:GitHub,rule-set:GoogleFCM,rule-set:Telegram-domain,rule-set:YouTube,rule-set:Twitter,rule-set:Google-domain,rule-set:Microsoft-domain,rule-set:GlobalProxy-domain":
       - https://dns.google/dns-query
       - https://1.1.1.1/dns-query
 
-proxy-groups:
-  - name: Proxy
-    type: select
-    proxies:
-      - auto
-      - DIRECT
-      - REJECT
-      - racknerd-anytls
-      - racknerd-hysteria2
-      - racknerd-VLESS-WS-TLS      
-      - amd1-anytls
-      - amd1-hysteria2
-      - amd1-VLESS-WS-TLS
-      - amd2-anytls
-      - amd1-hysteria2
-      - amd2-VLESS-WS-TLS
-      - bitsflow-1-anytls
-      - bitsflow-1-hysteria2
-      - bitsflow-1-VLESS-WS-TLS
-      - bitsflow-jp-anytls
-      - bitsflow-jp-hysteria2
-      - bitsflow-jp-VLESS-WS-TLS
-      - massivegrid-anytls
-      - massivegrid-hysteria2
-      - euserv-vless-ws
+
 
   - name: auto
     type: url-test
@@ -88,7 +74,7 @@ proxy-groups:
       - amd1-hysteria2
       - amd1-VLESS-WS-TLS
       - amd2-anytls
-      - amd1-hysteria2
+      - amd2-hysteria2
       - amd2-VLESS-WS-TLS
       - bitsflow-1-anytls
       - bitsflow-1-hysteria2
@@ -101,6 +87,8 @@ proxy-groups:
       - euserv-vless-ws
     url: "https://www.gstatic.com/generate_204"
     interval: 300
+    tolerance: 50
+    lazy: true
 
 # ==================== rule-providers ====================
 # MRS 文件来自 https://github.com/hutufeng/rule.Clash/tree/mrs
