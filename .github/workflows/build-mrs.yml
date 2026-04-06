@@ -98,10 +98,15 @@ jobs:
                       # DOMAIN 行直接使用，不做任何修改
                       domain_lines.append(f"  - {body}")
                   elif IPCIDR_RE.match(body):
-                      # IP 行只去掉 ,no-resolve（MRS 不需要此标记）
-                      ip_body = re.sub(r",no-resolve$", "", body, flags=re.I).strip()
+                      # mihomo ipcidr behavior 只接受纯 CIDR（如 109.239.140.0/24）
+                      # 必须去掉 "IP-CIDR," / "IP-CIDR6," 前缀，否则转换输出空文件
+                      ip_body = re.sub(r"^IP-CIDR6?,", "", body, flags=re.I)
+                      ip_body = re.sub(r",no-resolve$", "", ip_body, flags=re.I).strip()
                       ip_lines.append(f"  - {ip_body}")
 
+              # 去重（同一 CIDR 可能同时有带/不带 no-resolve 两行）
+              domain_lines = list(dict.fromkeys(domain_lines))
+              ip_lines     = list(dict.fromkeys(ip_lines))
               return domain_lines, ip_lines
 
           def build_yaml(domain_or_ip_lines):
