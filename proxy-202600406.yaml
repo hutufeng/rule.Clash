@@ -232,24 +232,16 @@ rule-providers:
     path: ./providers/Google-ip.mrs
     interval: 86400
 
-  # ── Microsoft（split → 两个 MRS）───────────────────────
-  Microsoft-domain:
+  # ── Microsoft（domain → 单个 MRS，无 IP 规则）──────────────────
+  Microsoft:
     type: http
     behavior: domain
     format: mrs
-    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Microsoft-domain.mrs"
-    path: ./providers/Microsoft-domain.mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Microsoft.mrs"
+    path: ./providers/Microsoft.mrs
     interval: 86400
 
-  Microsoft-ip:
-    type: http
-    behavior: ipcidr
-    format: mrs
-    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Microsoft-ip.mrs"
-    path: ./providers/Microsoft-ip.mrs
-    interval: 86400
-
-  # ── GlobalProxy（split → 两个 MRS）──────────────────────
+  # ── GlobalProxy（split → 两个 MRS，Proxy_Classical.yaml 含 domain+IP）──
   GlobalProxy-domain:
     type: http
     behavior: domain
@@ -301,12 +293,11 @@ rules:
   - RULE-SET,Twitter,Proxy
   - RULE-SET,Google-domain,Proxy
   - RULE-SET,Google-ip,Proxy,no-resolve
-  - RULE-SET,Microsoft-domain,Proxy
-  - RULE-SET,Microsoft-ip,Proxy,no-resolve
+  - RULE-SET,Microsoft,Proxy
 
-  # 6. 国外通用兜底代理（Actions 构建完成后生效）
+  # 6. 国外通用兜底代理（Proxy_Classical.yaml split）
   - RULE-SET,GlobalProxy-domain,Proxy
   - RULE-SET,GlobalProxy-ip,Proxy,no-resolve
 
-  # 7. 终极保底（未命中全走代理）
-  - MATCH,Proxy
+  # 7. 终极保底（GlobalProxy 已兜底国外，剩余走直连）
+  - MATCH,DIRECT
