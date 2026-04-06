@@ -70,38 +70,37 @@ jobs:
 
           def parse_payload(raw):
               """
-              解析 payload，返回 (domain行列表, ipcidr行列表, header行列表)
-              - domain行: 保留原始 YAML 行（带缩进）
-              - ipcidr行: 去掉 ,no-resolve 后缀，保留原始缩进
-              - header行: payload: 之前的所有行
+              解析 payload，返回 (domain行列表, ipcidr行列表)
+              blackmatrix7 rule-providers 格式无策略名：
+                - DOMAIN-SUFFIX,t.me          ← 直接用，不做任何修改
+                - IP-CIDR,149.154.0.0/16,no-resolve  ← 只去掉 no-resolve
+              ⚠️ 不能用通用正则去末尾「策略名」，否则会把域名 TLD 删掉导致 panic
               """
               lines = raw.splitlines()
-              headers, domain_lines, ip_lines = [], [], []
+              domain_lines, ip_lines = [], []
               in_payload = False
 
               for line in lines:
                   s = line.strip()
                   if s == "payload:":
                       in_payload = True
-                      continue                # payload: 行本身不需要输出
+                      continue
                   if not in_payload:
-                      headers.append(line)
                       continue
                   if not s.startswith("-"):
-                      continue               # 跳过空行等
-                  # 提取规则体
+                      continue
+                  # 仅去掉前缀 "  - "，保留完整规则体
                   body = re.sub(r"^[\s-]+", "", s)
-                  # 去掉末尾策略名（逗号+非逗号字符串）
-                  body_clean = re.sub(r",\w[\w\s]*$", "", body).strip()
-                  # 去掉 ,no-resolve 标记（IP-CIDR 特有）
-                  body_noresolve = re.sub(r",no-resolve$", "", body_clean, flags=re.I).strip()
 
-                  if DOMAIN_RE.match(body_clean):
-                      domain_lines.append(f"  - {body_clean}")
-                  elif IPCIDR_RE.match(body_clean):
-                      ip_lines.append(f"  - {body_noresolve}")
+                  if DOMAIN_RE.match(body):
+                      # DOMAIN 行直接使用，不做任何修改
+                      domain_lines.append(f"  - {body}")
+                  elif IPCIDR_RE.match(body):
+                      # IP 行只去掉 ,no-resolve（MRS 不需要此标记）
+                      ip_body = re.sub(r",no-resolve$", "", body, flags=re.I).strip()
+                      ip_lines.append(f"  - {ip_body}")
 
-              return headers, domain_lines, ip_lines
+              return domain_lines, ip_lines
 
           def build_yaml(domain_or_ip_lines):
               """拼装成 mihomo 可识别的 payload YAML"""
@@ -143,7 +142,7 @@ jobs:
               print(f"  ✅ {len(raw)} bytes，约 {total} 条规则")
 
               # 解析 payload
-              _, domain_lines, ip_lines = parse_payload(raw)
+              domain_lines, ip_lines = parse_payload(raw)
               print(f"  解析: {len(domain_lines)} 条 domain，{len(ip_lines)} 条 ipcidr")
 
               if behavior == "domain":
