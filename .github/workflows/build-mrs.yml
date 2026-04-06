@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # 消除 Node.js 20 deprecation 警告
 
     steps:
       - name: Checkout repository
@@ -219,8 +221,11 @@ jobs:
           print(f"\n{'='*55}")
           print(f"完成: {success} 成功 / {fail} 失败")
           print(f"{'='*55}")
-          if fail > 0:
+          if success == 0:
+              print("❌ 没有任何规则转换成功，终止")
               sys.exit(1)
+          elif fail > 0:
+              print(f"⚠️  {fail} 个规则失败，但 {success} 个成功，继续生成产物")
           PYEOF
 
       # ── 生成清单 + rule-providers 配置片段 ──────────────────────────────
