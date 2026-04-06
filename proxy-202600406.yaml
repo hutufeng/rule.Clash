@@ -1,0 +1,324 @@
+# ==================== Clash Verge 完整配置 ====================
+mode: rule
+log-level: info
+ipv6: false
+tcp-concurrent: true
+find-process-mode: strict
+global-client-fingerprint: chrome
+unified-delay: true
+
+# 不加载 geosite/geoip，完全使用 rule-providers 实现分流
+geodata-mode: false
+
+# ==================== TUN 配置 ====================
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+
+# ==================== DNS 配置 ====================
+dns:
+  enable: true
+  listen: :53
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  use-system-hosts: true
+  use-hosts: true
+
+  # 用于解析 DoH 服务器域名本身
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  # 节点地址解析，防止 DNS 回环
+  proxy-server-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  # 默认 DNS：所有未命中 nameserver-policy 的域名走国内 DNS
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  # ── DNS 分流：只命中国外服务，其余全走 nameserver（国内）──────
+  nameserver-policy:
+    "rule-set:OpenAI,rule-set:Anthropic,rule-set:Gemini,rule-set:Claude,rule-set:Copilot,rule-set:Bing,rule-set:GitHub,rule-set:GoogleFCM,rule-set:Telegram-domain,rule-set:YouTube,rule-set:Twitter,rule-set:Google-domain,rule-set:Microsoft-domain":
+      - https://dns.google/dns-query
+      - https://1.1.1.1/dns-query
+
+proxy-groups:
+  - name: Proxy
+    type: select
+    proxies:
+      - auto
+      - DIRECT
+      - REJECT
+      - racknerd-anytls
+      - racknerd-hysteria2
+      - racknerd-VLESS-WS-TLS      
+      - amd1-anytls
+      - amd1-hysteria2
+      - amd1-VLESS-WS-TLS
+      - amd2-anytls
+      - amd1-hysteria2
+      - amd2-VLESS-WS-TLS
+      - bitsflow-1-anytls
+      - bitsflow-1-hysteria2
+      - bitsflow-1-VLESS-WS-TLS
+      - bitsflow-jp-anytls
+      - bitsflow-jp-hysteria2
+      - bitsflow-jp-VLESS-WS-TLS
+      - massivegrid-anytls
+      - massivegrid-hysteria2
+      - euserv-vless-ws
+
+  - name: auto
+    type: url-test
+    proxies:
+      - racknerd-anytls
+      - racknerd-hysteria2
+      - racknerd-VLESS-WS-TLS      
+      - amd1-anytls
+      - amd1-hysteria2
+      - amd1-VLESS-WS-TLS
+      - amd2-anytls
+      - amd1-hysteria2
+      - amd2-VLESS-WS-TLS
+      - bitsflow-1-anytls
+      - bitsflow-1-hysteria2
+      - bitsflow-1-VLESS-WS-TLS
+      - bitsflow-jp-anytls
+      - bitsflow-jp-hysteria2
+      - bitsflow-jp-VLESS-WS-TLS
+      - massivegrid-anytls
+      - massivegrid-hysteria2
+      - euserv-vless-ws
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+
+# ==================== rule-providers ====================
+# MRS 文件来自 https://github.com/hutufeng/rule.Clash/tree/mrs
+# split 模式生成两个文件（-domain.mrs 和 -ip.mrs）
+# domain 模式生成单个 .mrs 文件
+# China / Apple / ProxyLite 暂无 MRS，使用 blackmatrix7 YAML
+
+rule-providers:
+
+  # ── Lan（split → 两个 MRS）─────────────────────────────
+  Lan-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Lan-domain.mrs"
+    path: ./providers/Lan-domain.mrs
+    interval: 604800
+
+  Lan-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Lan-ip.mrs"
+    path: ./providers/Lan-ip.mrs
+    interval: 604800
+
+  # ── AI 服务（domain → 单个 MRS）────────────────────────
+  OpenAI:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/OpenAI.mrs"
+    path: ./providers/OpenAI.mrs
+    interval: 86400
+
+  Gemini:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Gemini.mrs"
+    path: ./providers/Gemini.mrs
+    interval: 86400
+
+  Claude:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Claude.mrs"
+    path: ./providers/Claude.mrs
+    interval: 86400
+
+  Anthropic:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Anthropic.mrs"
+    path: ./providers/Anthropic.mrs
+    interval: 86400
+
+  Copilot:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Copilot.mrs"
+    path: ./providers/Copilot.mrs
+    interval: 86400
+
+  Bing:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Bing.mrs"
+    path: ./providers/Bing.mrs
+    interval: 86400
+
+  # ── 开发者与推送服务（domain → 单个 MRS）──────────────
+  GitHub:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/GitHub.mrs"
+    path: ./providers/GitHub.mrs
+    interval: 86400
+
+  GoogleFCM:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/GoogleFCM.mrs"
+    path: ./providers/GoogleFCM.mrs
+    interval: 86400
+
+  # ── Telegram（split → 两个 MRS）────────────────────────
+  Telegram-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Telegram-domain.mrs"
+    path: ./providers/Telegram-domain.mrs
+    interval: 86400
+
+  Telegram-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Telegram-ip.mrs"
+    path: ./providers/Telegram-ip.mrs
+    interval: 86400
+
+  # ── 基础服务大包 ─────────────────────────────────────────
+  YouTube:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/YouTube.mrs"
+    path: ./providers/YouTube.mrs
+    interval: 86400
+
+  Twitter:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Twitter.mrs"
+    path: ./providers/Twitter.mrs
+    interval: 86400
+
+  # ── Google（split → 两个 MRS）──────────────────────────
+  Google-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Google-domain.mrs"
+    path: ./providers/Google-domain.mrs
+    interval: 86400
+
+  Google-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Google-ip.mrs"
+    path: ./providers/Google-ip.mrs
+    interval: 86400
+
+  # ── Microsoft（split → 两个 MRS）───────────────────────
+  Microsoft-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Microsoft-domain.mrs"
+    path: ./providers/Microsoft-domain.mrs
+    interval: 86400
+
+  Microsoft-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Microsoft-ip.mrs"
+    path: ./providers/Microsoft-ip.mrs
+    interval: 86400
+
+  # ── GlobalProxy（split → 两个 MRS）──────────────────────
+  GlobalProxy-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/GlobalProxy-domain.mrs"
+    path: ./providers/GlobalProxy-domain.mrs
+    interval: 86400
+
+  GlobalProxy-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/GlobalProxy-ip.mrs"
+    path: ./providers/GlobalProxy-ip.mrs
+    interval: 86400
+
+
+# ==================== rules ====================
+rules:
+  # 1. 局域网直连（IP 规则加 no-resolve）
+  - RULE-SET,Lan-domain,DIRECT
+  - RULE-SET,Lan-ip,DIRECT,no-resolve
+
+  # 2. 手动补漏（紧随直连，优先于规则集）
+  - DOMAIN-SUFFIX,grok.com,Proxy
+  - DOMAIN-SUFFIX,xai.com,Proxy
+  - DOMAIN-SUFFIX,deepl.com,Proxy
+  - DOMAIN-SUFFIX,deeplcdn.com,Proxy
+  - DOMAIN-SUFFIX,cloud.microsoft,Proxy
+  - DOMAIN-SUFFIX,eu.org,Proxy
+  - DOMAIN-SUFFIX,363723.xyz,Proxy
+
+  # 3. AI 服务
+  - RULE-SET,OpenAI,Proxy
+  - RULE-SET,Gemini,Proxy
+  - RULE-SET,Claude,Proxy
+  - RULE-SET,Anthropic,Proxy
+  - RULE-SET,Copilot,Proxy
+  - RULE-SET,Bing,Proxy
+
+  # 4. 开发者与推送服务
+  - RULE-SET,GitHub,Proxy
+  - RULE-SET,GoogleFCM,Proxy
+  - RULE-SET,Telegram-domain,Proxy
+  - RULE-SET,Telegram-ip,Proxy,no-resolve
+
+  # 5. 基础服务大包
+  - RULE-SET,YouTube,Proxy
+  - RULE-SET,Twitter,Proxy
+  - RULE-SET,Google-domain,Proxy
+  - RULE-SET,Google-ip,Proxy,no-resolve
+  - RULE-SET,Microsoft-domain,Proxy
+  - RULE-SET,Microsoft-ip,Proxy,no-resolve
+
+  # 6. 国外通用兜底代理（Actions 构建完成后生效）
+  - RULE-SET,GlobalProxy-domain,Proxy
+  - RULE-SET,GlobalProxy-ip,Proxy,no-resolve
+
+  # 7. 终极保底（未命中全走代理）
+  - MATCH,Proxy
