@@ -99,12 +99,12 @@ jobs:
                       # mihomo domain behavior 的 payload 要求纯域名格式：
                       #   DOMAIN-SUFFIX,github.com  →  +.github.com
                       #   DOMAIN,github.com         →  github.com
-                      #   DOMAIN-KEYWORD,github     →  保留（keyword 格式）
+                      #   DOMAIN-KEYWORD,github     →  过滤掉（domain MRS 不支持 keyword）
                       if body.upper().startswith("DOMAIN-SUFFIX,"):
                           val = body.split(",", 1)[1]
                           domain_lines.append(f"  - +.{val}")
                       elif body.upper().startswith("DOMAIN-KEYWORD,"):
-                          domain_lines.append(f"  - {body}")   # keyword 保持原样
+                          pass   # domain MRS 不支持 keyword，直接丢弃
                       else:
                           # DOMAIN,xxx → 纯域名
                           val = body.split(",", 1)[1]

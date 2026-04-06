@@ -56,9 +56,10 @@ dns:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
 
-  # ── DNS 分流：只命中国外服务，其余全走 nameserver（国内）──────
+  # ── DNS 分流：命中国外精细规则集的域名走国外 DoH ──────────────
+  # GlobalProxy 规则太大（5874条），不放入 DNS 层，防止每次解析都全量扫描
   nameserver-policy:
-    "rule-set:OpenAI,rule-set:Anthropic,rule-set:Gemini,rule-set:Claude,rule-set:Copilot,rule-set:Bing,rule-set:GitHub,rule-set:GoogleFCM,rule-set:Telegram-domain,rule-set:YouTube,rule-set:Twitter,rule-set:Google-domain,rule-set:Microsoft-domain,rule-set:GlobalProxy-domain":
+    "rule-set:OpenAI,rule-set:Anthropic,rule-set:Gemini,rule-set:Claude,rule-set:Copilot,rule-set:Bing,rule-set:GitHub,rule-set:GoogleFCM,rule-set:Telegram-domain,rule-set:YouTube,rule-set:Twitter,rule-set:Google-domain,rule-set:Microsoft":
       - https://dns.google/dns-query
       - https://1.1.1.1/dns-query
 
