@@ -96,8 +96,19 @@ jobs:
                   body = re.sub(r"^[\s-]+", "", s)
 
                   if DOMAIN_RE.match(body):
-                      # DOMAIN 行直接使用，不做任何修改
-                      domain_lines.append(f"  - {body}")
+                      # mihomo domain behavior 的 payload 要求纯域名格式：
+                      #   DOMAIN-SUFFIX,github.com  →  +.github.com
+                      #   DOMAIN,github.com         →  github.com
+                      #   DOMAIN-KEYWORD,github     →  保留（keyword 格式）
+                      if body.upper().startswith("DOMAIN-SUFFIX,"):
+                          val = body.split(",", 1)[1]
+                          domain_lines.append(f"  - +.{val}")
+                      elif body.upper().startswith("DOMAIN-KEYWORD,"):
+                          domain_lines.append(f"  - {body}")   # keyword 保持原样
+                      else:
+                          # DOMAIN,xxx → 纯域名
+                          val = body.split(",", 1)[1]
+                          domain_lines.append(f"  - {val}")
                   elif IPCIDR_RE.match(body):
                       # mihomo ipcidr behavior 只接受纯 CIDR（如 109.239.140.0/24）
                       # 必须去掉 "IP-CIDR," / "IP-CIDR6," 前缀，否则转换输出空文件
