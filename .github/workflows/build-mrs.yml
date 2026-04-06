@@ -1,0 +1,331 @@
+name: Build MRS Rulesets
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 22 * * 1"    # 每周一 UTC 22:00（北京时间周二 06:00）
+    # 每天:  "0 22 * * *"
+    # 每月:  "0 22 1 * *"
+  push:
+    branches: [main]
+    paths:
+      - "ruleset-config.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      # ── 下载 mihomo 二进制 ────────────────────────────────────────────────
+      - name: Download mihomo binary
+        run: |
+          LATEST=$(curl -sSL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+          echo "mihomo latest: $LATEST"
+          curl -sSL \
+            "https://github.com/MetaCubeX/mihomo/releases/download/${LATEST}/mihomo-linux-amd64-${LATEST}.gz" \
+            -o mihomo.gz
+          gunzip mihomo.gz
+          chmod +x mihomo
+          ./mihomo -v
+
+      # ── 核心转换步骤 ──────────────────────────────────────────────────────
+      # behavior 支持三种模式：
+      #   domain → 只提取 DOMAIN/DOMAIN-SUFFIX/DOMAIN-KEYWORD → name.mrs
+      #   ipcidr → 只提取 IP-CIDR/IP-CIDR6                   → name.mrs
+      #   split  → 同时提取两类，从同一文件生成两个 MRS：
+      #            name-domain.mrs + name-ip.mrs
+      - name: Convert rulesets to MRS
+        run: |
+          mkdir -p ./mrs
+          python3 << 'PYEOF'
+          import yaml, subprocess, os, urllib.request, sys, re
+
+          # ── 正则定义 ──────────────────────────────────────────────────────
+          DOMAIN_RE  = re.compile(r"^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD),", re.I)
+          IPCIDR_RE  = re.compile(r"^(IP-CIDR|IP-CIDR6),", re.I)
+
+          def download(url):
+              """下载并返回文本内容，失败返回 None"""
+              try:
+                  req = urllib.request.Request(url, headers={"User-Agent": "curl/7.0"})
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      return resp.read().decode("utf-8")
+              except Exception as e:
+                  print(f"  ❌ 下载失败: {e}")
+                  return None
+
+          def parse_payload(raw):
+              """
+              解析 payload，返回 (domain行列表, ipcidr行列表, header行列表)
+              - domain行: 保留原始 YAML 行（带缩进）
+              - ipcidr行: 去掉 ,no-resolve 后缀，保留原始缩进
+              - header行: payload: 之前的所有行
+              """
+              lines = raw.splitlines()
+              headers, domain_lines, ip_lines = [], [], []
+              in_payload = False
+
+              for line in lines:
+                  s = line.strip()
+                  if s == "payload:":
+                      in_payload = True
+                      continue                # payload: 行本身不需要输出
+                  if not in_payload:
+                      headers.append(line)
+                      continue
+                  if not s.startswith("-"):
+                      continue               # 跳过空行等
+                  # 提取规则体
+                  body = re.sub(r"^[\s-]+", "", s)
+                  # 去掉末尾策略名（逗号+非逗号字符串）
+                  body_clean = re.sub(r",\w[\w\s]*$", "", body).strip()
+                  # 去掉 ,no-resolve 标记（IP-CIDR 特有）
+                  body_noresolve = re.sub(r",no-resolve$", "", body_clean, flags=re.I).strip()
+
+                  if DOMAIN_RE.match(body_clean):
+                      domain_lines.append(f"  - {body_clean}")
+                  elif IPCIDR_RE.match(body_clean):
+                      ip_lines.append(f"  - {body_noresolve}")
+
+              return headers, domain_lines, ip_lines
+
+          def build_yaml(domain_or_ip_lines):
+              """拼装成 mihomo 可识别的 payload YAML"""
+              return "payload:\n" + "\n".join(domain_or_ip_lines) + "\n"
+
+          def convert(input_file, output_file, behavior):
+              """调用 mihomo convert-ruleset，成功返回文件大小，失败返回 None"""
+              cmd = ["./mihomo", "convert-ruleset", behavior, "yaml", input_file, output_file]
+              r = subprocess.run(cmd, capture_output=True, text=True)
+              if r.returncode == 0:
+                  return os.path.getsize(output_file)
+              else:
+                  print(f"  ❌ convert-ruleset 失败: {r.stderr.strip()}")
+                  return None
+
+          # ── 主流程 ────────────────────────────────────────────────────────
+          with open("ruleset-config.yml", "r") as f:
+              config = yaml.safe_load(f)
+
+          rulesets = config.get("rulesets", [])
+          success, fail = 0, 0
+
+          for rule in rulesets:
+              name     = rule["name"]
+              behavior = rule["behavior"]
+              url      = rule["url"]
+
+              print(f"\n{'─'*55}")
+              print(f"[{name}]  behavior={behavior}")
+              print(f"  {url}")
+
+              # 下载
+              raw = download(url)
+              if raw is None:
+                  fail += 1
+                  continue
+
+              total = raw.count("\n  - ")
+              print(f"  ✅ {len(raw)} bytes，约 {total} 条规则")
+
+              # 解析 payload
+              _, domain_lines, ip_lines = parse_payload(raw)
+              print(f"  解析: {len(domain_lines)} 条 domain，{len(ip_lines)} 条 ipcidr")
+
+              if behavior == "domain":
+                  # ── 只要 domain ──────────────────────────────────────────
+                  if not domain_lines:
+                      print("  ⚠️  没有 domain 行，跳过")
+                      fail += 1
+                      continue
+                  tmp = f"/tmp/{name}.yaml"
+                  with open(tmp, "w") as f:
+                      f.write(build_yaml(domain_lines))
+                  size = convert(tmp, f"./mrs/{name}.mrs", "domain")
+                  if size:
+                      print(f"  ✅ {name}.mrs ({size} bytes)")
+                      success += 1
+                  else:
+                      fail += 1
+
+              elif behavior == "ipcidr":
+                  # ── 只要 ipcidr ──────────────────────────────────────────
+                  if not ip_lines:
+                      print("  ⚠️  没有 ipcidr 行，跳过")
+                      fail += 1
+                      continue
+                  tmp = f"/tmp/{name}.yaml"
+                  with open(tmp, "w") as f:
+                      f.write(build_yaml(ip_lines))
+                  size = convert(tmp, f"./mrs/{name}.mrs", "ipcidr")
+                  if size:
+                      print(f"  ✅ {name}.mrs ({size} bytes)")
+                      success += 1
+                  else:
+                      fail += 1
+
+              elif behavior == "split":
+                  # ── 同时生成 domain + ipcidr 两个 MRS ───────────────────
+                  any_ok = False
+
+                  if domain_lines:
+                      tmp = f"/tmp/{name}-domain.yaml"
+                      with open(tmp, "w") as f:
+                          f.write(build_yaml(domain_lines))
+                      size = convert(tmp, f"./mrs/{name}-domain.mrs", "domain")
+                      if size:
+                          print(f"  ✅ {name}-domain.mrs ({size} bytes)")
+                          any_ok = True
+                      else:
+                          fail += 1
+                  else:
+                      print(f"  ⚠️  {name}: 无 domain 行，跳过 domain 部分")
+
+                  if ip_lines:
+                      tmp = f"/tmp/{name}-ip.yaml"
+                      with open(tmp, "w") as f:
+                          f.write(build_yaml(ip_lines))
+                      size = convert(tmp, f"./mrs/{name}-ip.mrs", "ipcidr")
+                      if size:
+                          print(f"  ✅ {name}-ip.mrs ({size} bytes)")
+                          any_ok = True
+                      else:
+                          fail += 1
+                  else:
+                      print(f"  ⚠️  {name}: 无 ipcidr 行，跳过 ip 部分")
+
+                  if any_ok:
+                      success += 1
+                  else:
+                      fail += 1
+
+              else:
+                  print(f"  ⚠️  未知 behavior: {behavior}，跳过")
+                  fail += 1
+
+          print(f"\n{'='*55}")
+          print(f"完成: {success} 成功 / {fail} 失败")
+          print(f"{'='*55}")
+          if fail > 0:
+              sys.exit(1)
+          PYEOF
+
+      # ── 生成清单 + rule-providers 配置片段 ──────────────────────────────
+      - name: Generate manifest and config snippet
+        run: |
+          REPO="${{ github.repository }}"
+          BUILD_TIME=$(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M')
+          python3 << PYEOF
+          import yaml, os, json
+
+          with open("ruleset-config.yml", "r") as f:
+              config = yaml.safe_load(f)
+
+          rulesets = config.get("rulesets", [])
+          repo       = "$REPO"
+          build_time = "$BUILD_TIME"
+
+          # ── 扫描实际生成的 .mrs 文件 ─────────────────────────────────────
+          mrs_files = sorted(f for f in os.listdir("./mrs") if f.endswith(".mrs"))
+
+          # manifest.json
+          manifest = {"build_time": build_time, "repo": repo, "files": []}
+          for fname in mrs_files:
+              size = os.path.getsize(f"./mrs/{fname}")
+              manifest["files"].append({
+                  "file": fname,
+                  "size_bytes": size,
+                  "url": f"https://github.com/{repo}/raw/mrs/{fname}"
+              })
+          with open("./mrs/manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+          # ── rule-providers 配置片段 ───────────────────────────────────────
+          # 直连/拒绝策略白名单（剩余统一走 Proxy）
+          DIRECT_NAMES = {"Lan", "Lan-domain", "Lan-ip", "cn"}
+          REJECT_NAMES = {"ads"}
+
+          snippet  = f"# 自动生成 buildtime={build_time}  repo={repo}\n"
+          snippet += "# 将以下内容合并到你的 clash-verge-rev 配置中\n\n"
+          snippet += "rule-providers:\n"
+
+          for fname in mrs_files:
+              nm   = fname.replace(".mrs", "")
+              # 判断 behavior
+              if nm.endswith("-domain"):
+                  bh = "domain"
+              elif nm.endswith("-ip"):
+                  bh = "ipcidr"
+              else:
+                  # 从配置中查找原始 behavior
+                  rule = next((r for r in rulesets if r["name"] == nm), {})
+                  bh = rule.get("behavior", "domain")
+                  if bh == "split":
+                      bh = "domain"   # 不应该出现，保底
+
+              snippet += f"\n  {nm}:\n"
+              snippet += f"    type: http\n"
+              snippet += f"    behavior: {bh}\n"
+              snippet += f"    format: mrs\n"
+              snippet += f"    url: \"https://github.com/{repo}/raw/mrs/{fname}\"\n"
+              snippet += f"    path: ./providers/{fname}\n"
+              snippet += f"    interval: 86400\n"
+
+          snippet += "\n\nrules:\n"
+          for fname in mrs_files:
+              nm = fname.replace(".mrs", "")
+              if nm in DIRECT_NAMES:
+                  policy = "DIRECT"
+              elif nm in REJECT_NAMES:
+                  policy = "REJECT"
+              else:
+                  policy = "Proxy"
+              snippet += f"  - RULE-SET,{nm},{policy}\n"
+          snippet += "  - MATCH,DIRECT\n"
+
+          with open("./mrs/rule-providers-snippet.yaml", "w", encoding="utf-8") as f:
+              f.write(snippet)
+
+          print(f"清单生成完毕: {len(mrs_files)} 个 MRS 文件")
+          for f in mrs_files:
+              print(f"  {f}")
+          PYEOF
+
+      # ── 推送到 mrs 分支 ──────────────────────────────────────────────────
+      - name: Push to mrs branch
+        run: |
+          BUILD_TIME=$(TZ=Asia/Shanghai date +'%Y-%m-%d %H:%M')
+          cd mrs
+          git init
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b mrs
+          git add .
+          git commit -m "Auto build MRS - $BUILD_TIME"
+          git remote add origin \
+            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git push -f origin mrs
+          echo "✅ 推送到 mrs 分支成功"
+          ls -lh *.mrs
+
+      # ── 上传 Artifacts ───────────────────────────────────────────────────
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mrs-rulesets-${{ github.run_number }}
+          path: ./mrs/
+          retention-days: 7

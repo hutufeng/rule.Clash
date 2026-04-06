@@ -1,0 +1,95 @@
+# ============================================================
+# MRS 规则集自动构建配置文件
+# ============================================================
+# behavior 支持三种模式：
+#
+#   domain  → 只提取 DOMAIN/DOMAIN-SUFFIX/DOMAIN-KEYWORD 行 → 生成 name.mrs
+#   ipcidr  → 只提取 IP-CIDR/IP-CIDR6 行                  → 生成 name.mrs
+#   split   → 从同一文件同时提取两类 → 生成 name-domain.mrs + name-ip.mrs
+#             （专为 _No_Resolve.yaml 混合文件设计）
+#
+# 推荐策略：
+#   - 纯域名服务（OpenAI/Gemini等）→ behavior: domain
+#   - 有 IP 规则的服务（Telegram/Lan等）→ behavior: split
+# ============================================================
+
+schedule:
+  daily:   false   # → cron: "0 22 * * *"
+  weekly:  true    # → cron: "0 22 * * 1"（当前默认）
+  monthly: false   # → cron: "0 22 1 * *"
+
+rulesets:
+
+  # ── 局域网直连（含 IP 段，用 split）────────────────────────
+  - name: Lan
+    behavior: split
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Lan/Lan.yaml"
+
+  # ── AI 服务（纯域名，用 domain）────────────────────────────
+  - name: OpenAI
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml"
+
+  - name: Gemini
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Gemini/Gemini.yaml"
+
+  - name: Claude
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Claude/Claude.yaml"
+
+  - name: Anthropic
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Anthropic/Anthropic.yaml"
+
+  - name: Copilot
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Copilot/Copilot.yaml"
+
+  - name: Bing
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Bing/Bing.yaml"
+
+  # ── 开发者服务（split：GitHub 有 IP，FCM 有 IP）────────────
+  - name: GitHub
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/GitHub/GitHub.yaml"
+
+  - name: GoogleFCM
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/GoogleFCM/GoogleFCM.yaml"
+
+  # Telegram 有大量 IP 段，split 可同时匹配域名和 IP
+  - name: Telegram
+    behavior: split
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Telegram/Telegram.yaml"
+
+  - name: YouTube
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml"
+
+  # ── 基础服务大包 ─────────────────────────────────────────
+  - name: Twitter
+    behavior: domain
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Twitter/Twitter.yaml"
+
+  - name: Google
+    behavior: split
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google.yaml"
+
+  - name: Microsoft
+    behavior: split
+    url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Microsoft/Microsoft.yaml"
+
+  # ── 可选追加 ─────────────────────────────────────────────
+  # - name: Netflix
+  #   behavior: split
+  #   url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Netflix/Netflix.yaml"
+  #
+  # - name: Spotify
+  #   behavior: domain
+  #   url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Spotify/Spotify.yaml"
+  #
+  # - name: Discord
+  #   behavior: split
+  #   url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Discord/Discord.yaml"
