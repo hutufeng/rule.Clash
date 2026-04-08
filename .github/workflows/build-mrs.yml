@@ -185,12 +185,12 @@ jobs:
                       success += 1
                   else:
                       fail += 1
-                  # keyword 写 classical YAML
-                  if keyword_lines:
+                  # keyword：只在 exclude_merge=true 时单独生成（直连服务需单独控制）
+                  if keyword_lines and rule.get("exclude_merge", False):
                       kw_path = f"./mrs/{name}-keyword.yaml"
                       with open(kw_path, "w") as f:
                           f.write(build_yaml(keyword_lines))
-                      print(f"  ✅ {name}-keyword.yaml ({len(keyword_lines)} 条 keyword)")
+                      print(f"  ✅ {name}-keyword.yaml ({len(keyword_lines)} 条 keyword) [exclude_merge]")
 
               elif behavior == "ipcidr":
                   # ── 只要 ipcidr ──────────────────────────────────────────
@@ -238,12 +238,12 @@ jobs:
                   else:
                       print(f"  ⚠️  {name}: 无 ipcidr 行，跳过 ip 部分")
 
-                  # keyword 写 classical YAML
-                  if keyword_lines:
+                  # keyword：只在 exclude_merge=true 时单独生成
+                  if keyword_lines and rule.get("exclude_merge", False):
                       kw_path = f"./mrs/{name}-keyword.yaml"
                       with open(kw_path, "w") as f:
                           f.write(build_yaml(keyword_lines))
-                      print(f"  ✅ {name}-keyword.yaml ({len(keyword_lines)} 条 keyword)")
+                      print(f"  ✅ {name}-keyword.yaml ({len(keyword_lines)} 条 keyword) [exclude_merge]")
                       any_ok = True
 
                   if any_ok:
