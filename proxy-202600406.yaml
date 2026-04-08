@@ -259,6 +259,14 @@ rule-providers:
     path: ./providers/GlobalProxy-ip.mrs
     interval: 86400
 
+  GlobalProxy-keyword:
+    type: http
+    behavior: classical
+    format: yaml
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/GlobalProxy-keyword.yaml"
+    path: ./providers/GlobalProxy-keyword.yaml
+    interval: 86400
+
 
 # ==================== rules ====================
 rules:
@@ -297,6 +305,7 @@ rules:
   - RULE-SET,Microsoft,Proxy
 
   # 6. 国外通用兜底代理（Proxy_Classical.yaml split）
+  - RULE-SET,GlobalProxy-keyword,Proxy
   - RULE-SET,GlobalProxy-domain,Proxy
   - RULE-SET,GlobalProxy-ip,Proxy,no-resolve
 

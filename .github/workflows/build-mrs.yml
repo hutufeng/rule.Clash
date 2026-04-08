@@ -73,14 +73,15 @@ jobs:
 
           def parse_payload(raw):
               """
-              解析 payload，返回 (domain行列表, ipcidr行列表)
-              blackmatrix7 rule-providers 格式无策略名：
-                - DOMAIN-SUFFIX,t.me          ← 直接用，不做任何修改
-                - IP-CIDR,149.154.0.0/16,no-resolve  ← 只去掉 no-resolve
-              ⚠️ 不能用通用正则去末尾「策略名」，否则会把域名 TLD 删掉导致 panic
+              解析 payload，返回 (domain行列表, ipcidr行列表, keyword行列表)
+              转换规则：
+                DOMAIN-SUFFIX,t.me          →  +.t.me
+                DOMAIN,api.x.com            →  api.x.com
+                DOMAIN-KEYWORD,github       →  单独收集（不能进 MRS）
+                IP-CIDR,149.154.0.0/16,...  →  149.154.0.0/16（去前缀和 no-resolve）
               """
               lines = raw.splitlines()
-              domain_lines, ip_lines = [], []
+              domain_lines, ip_lines, keyword_lines = [], [], []
               in_payload = False
 
               for line in lines:
@@ -95,16 +96,16 @@ jobs:
                   # 仅去掉前缀 "  - "，保留完整规则体
                   body = re.sub(r"^[\s-]+", "", s)
 
-                  if DOMAIN_RE.match(body):
+                  if body.upper().startswith("DOMAIN-KEYWORD,"):
+                      # keyword 不能进 MRS，单独收集
+                      keyword_lines.append(f"  - {body}")
+                  elif DOMAIN_RE.match(body):
                       # mihomo domain behavior 的 payload 要求纯域名格式：
                       #   DOMAIN-SUFFIX,github.com  →  +.github.com
                       #   DOMAIN,github.com         →  github.com
-                      #   DOMAIN-KEYWORD,github     →  过滤掉（domain MRS 不支持 keyword）
                       if body.upper().startswith("DOMAIN-SUFFIX,"):
                           val = body.split(",", 1)[1]
                           domain_lines.append(f"  - +.{val}")
-                      elif body.upper().startswith("DOMAIN-KEYWORD,"):
-                          pass   # domain MRS 不支持 keyword，直接丢弃
                       else:
                           # DOMAIN,xxx → 纯域名
                           val = body.split(",", 1)[1]
@@ -117,9 +118,10 @@ jobs:
                       ip_lines.append(f"  - {ip_body}")
 
               # 去重（同一 CIDR 可能同时有带/不带 no-resolve 两行）
-              domain_lines = list(dict.fromkeys(domain_lines))
-              ip_lines     = list(dict.fromkeys(ip_lines))
-              return domain_lines, ip_lines
+              domain_lines  = list(dict.fromkeys(domain_lines))
+              ip_lines      = list(dict.fromkeys(ip_lines))
+              keyword_lines = list(dict.fromkeys(keyword_lines))
+              return domain_lines, ip_lines, keyword_lines
 
           def build_yaml(domain_or_ip_lines):
               """拼装成 mihomo 可识别的 payload YAML"""
@@ -161,11 +163,11 @@ jobs:
               print(f"  ✅ {len(raw)} bytes，约 {total} 条规则")
 
               # 解析 payload
-              domain_lines, ip_lines = parse_payload(raw)
-              print(f"  解析: {len(domain_lines)} 条 domain，{len(ip_lines)} 条 ipcidr")
+              domain_lines, ip_lines, keyword_lines = parse_payload(raw)
+              print(f"  解析: {len(domain_lines)} 条 domain，{len(ip_lines)} 条 ipcidr，{len(keyword_lines)} 条 keyword")
 
               if behavior == "domain":
-                  # ── 只要 domain ──────────────────────────────────────────
+                  # ── 只要 domain ───────────────────────────────────────────────
                   if not domain_lines:
                       print("  ⚠️  没有 domain 行，跳过")
                       fail += 1
@@ -179,6 +181,12 @@ jobs:
                       success += 1
                   else:
                       fail += 1
+                  # keyword 写 classical YAML
+                  if keyword_lines:
+                      kw_path = f"./mrs/{name}-keyword.yaml"
+                      with open(kw_path, "w") as f:
+                          f.write(build_yaml(keyword_lines))
+                      print(f"  ✅ {name}-keyword.yaml ({len(keyword_lines)} 条 keyword)")
 
               elif behavior == "ipcidr":
                   # ── 只要 ipcidr ──────────────────────────────────────────
@@ -225,6 +233,14 @@ jobs:
                           fail += 1
                   else:
                       print(f"  ⚠️  {name}: 无 ipcidr 行，跳过 ip 部分")
+
+                  # keyword 写 classical YAML
+                  if keyword_lines:
+                      kw_path = f"./mrs/{name}-keyword.yaml"
+                      with open(kw_path, "w") as f:
+                          f.write(build_yaml(keyword_lines))
+                      print(f"  ✅ {name}-keyword.yaml ({len(keyword_lines)} 条 keyword)")
+                      any_ok = True
 
                   if any_ok:
                       success += 1
