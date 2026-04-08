@@ -34,10 +34,22 @@ jobs:
 
       # ── 下载 mihomo 二进制 ────────────────────────────────────────────────
       - name: Download mihomo binary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST=$(curl -sSL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
-          echo "mihomo latest: $LATEST"
+          LATEST=$(curl -sSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+            | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          tag = d.get('tag_name')
+          if not tag:
+              print('API 返回异常:', json.dumps(d)[:200], file=sys.stderr)
+              tag = 'v1.19.10'   # 备用固定版本
+          print(tag)
+          ")
+          echo "mihomo version: $LATEST"
           curl -sSL \
             "https://github.com/MetaCubeX/mihomo/releases/download/${LATEST}/mihomo-linux-amd64-${LATEST}.gz" \
             -o mihomo.gz
