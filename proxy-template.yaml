@@ -150,7 +150,13 @@ rules:
   - RULE-SET,Lan-ip,DIRECT,no-resolve
 
   # 2. 手动补漏（不在规则集里的域名，在此快速命中）
-  # - DOMAIN-SUFFIX,example.com,Proxy
+  - DOMAIN-SUFFIX,grok.com,Proxy
+  - DOMAIN-SUFFIX,xai.com,Proxy
+  - DOMAIN-SUFFIX,deepl.com,Proxy
+  - DOMAIN-SUFFIX,deeplcdn.com,Proxy
+  - DOMAIN-SUFFIX,cloud.microsoft,Proxy
+  - DOMAIN-SUFFIX,eu.org,Proxy
+  - DOMAIN-SUFFIX,363723.xyz,Proxy
 
   # 3. 代理全集（keyword → domain → ip）
   - RULE-SET,ProxyAll-keyword,Proxy
