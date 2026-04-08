@@ -1,0 +1,161 @@
+# =============================================================
+# Clash Verge Rev 极简配置模板
+# 基于 MRS 合并规则集（Lan 直连 + ProxyAll 代理全集）
+# 规则集来源：https://github.com/hutufeng/rule.Clash/tree/mrs
+# =============================================================
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+geodata-mode: false
+
+unified-delay: true
+tcp-concurrent: true
+
+external-controller: 127.0.0.1:9090
+
+
+# ==================== DNS ====================
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+
+  # fake-ip 过滤（这些域名返回真实 IP，不走 fake-ip）
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "*.localhost"
+    - "time.windows.com"
+    - "time.ntp.org"
+    - "+.stun.*.*"
+    - "stun.*.*.*"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+
+  # 用于解析 DoH 服务器域名本身
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  # 节点地址解析，防止 DNS 回环
+  proxy-server-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  # 默认 DNS：所有未命中 nameserver-policy 的域名走国内 DNS
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  # DNS 分流：代理域名走国外 DoH，其余走国内 DNS
+  nameserver-policy:
+    "rule-set:ProxyAll-domain":
+      - https://dns.google/dns-query
+      - https://1.1.1.1/dns-query
+
+
+# ==================== 代理节点 ====================
+proxies:
+  # 在此填入你的节点，例如：
+  # - name: "HK-01"
+  #   type: hysteria2
+  #   server: your.server.com
+  #   port: 443
+  #   password: your_password
+  #   sni: your.server.com
+  #   skip-cert-verify: false
+
+
+# ==================== 代理组 ====================
+proxy-groups:
+
+  # 主选择组（手动切换节点）
+  - name: Proxy
+    type: select
+    proxies:
+      - auto
+      # 在此列出你的节点名称，例如：
+      # - HK-01
+      # - SG-01
+
+  # 自动测速组
+  - name: auto
+    type: url-test
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+    lazy: true
+    proxies:
+      # 在此列出参与测速的节点名称，例如：
+      # - HK-01
+      # - SG-01
+
+
+# ==================== rule-providers ====================
+# 产物来自 https://github.com/hutufeng/rule.Clash/tree/mrs
+# 只需两组：Lan（直连）+ ProxyAll（代理全集合并去重）
+
+rule-providers:
+
+  # ── 局域网直连（单独保留，不合并进 ProxyAll）────────────────
+  Lan-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Lan-domain.mrs"
+    path: ./providers/Lan-domain.mrs
+    interval: 604800
+
+  Lan-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/Lan-ip.mrs"
+    path: ./providers/Lan-ip.mrs
+    interval: 604800
+
+  # ── 代理规则全集（所有非-Lan 规则集合并去重）────────────────
+  ProxyAll-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/ProxyAll-domain.mrs"
+    path: ./providers/ProxyAll-domain.mrs
+    interval: 86400
+
+  ProxyAll-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/ProxyAll-ip.mrs"
+    path: ./providers/ProxyAll-ip.mrs
+    interval: 86400
+
+  ProxyAll-keyword:
+    type: http
+    behavior: classical
+    format: yaml
+    url: "https://raw.githubusercontent.com/hutufeng/rule.Clash/mrs/ProxyAll-keyword.yaml"
+    path: ./providers/ProxyAll-keyword.yaml
+    interval: 86400
+
+
+# ==================== rules ====================
+rules:
+  # 1. 局域网直连
+  - RULE-SET,Lan-domain,DIRECT
+  - RULE-SET,Lan-ip,DIRECT,no-resolve
+
+  # 2. 手动补漏（不在规则集里的域名，在此快速命中）
+  # - DOMAIN-SUFFIX,example.com,Proxy
+
+  # 3. 代理全集（keyword → domain → ip）
+  - RULE-SET,ProxyAll-keyword,Proxy
+  - RULE-SET,ProxyAll-domain,Proxy
+  - RULE-SET,ProxyAll-ip,Proxy,no-resolve
+
+  # 4. 终极保底（ProxyAll 已兜底国外，剩余走直连）
+  - MATCH,DIRECT

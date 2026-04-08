@@ -143,6 +143,10 @@ jobs:
 
           rulesets = config.get("rulesets", [])
           success, fail = 0, 0
+          # 合并用全局列表（exclude_merge=true 的规则集不撡入）
+          all_domain_lines  = []
+          all_ip_lines      = []
+          all_keyword_lines = []
 
           for rule in rulesets:
               name     = rule["name"]
@@ -251,6 +255,12 @@ jobs:
                   print(f"  ⚠️  未知 behavior: {behavior}，跳过")
                   fail += 1
 
+              # ── 合并进全局变量（不含 exclude_merge 的规则集）─────────
+              if not rule.get("exclude_merge", False):
+                  all_domain_lines.extend(domain_lines)
+                  all_ip_lines.extend(ip_lines)
+                  all_keyword_lines.extend(keyword_lines)
+
           print(f"\n{'='*55}")
           print(f"完成: {success} 成功 / {fail} 失败")
           print(f"{'='*55}")
@@ -259,6 +269,35 @@ jobs:
               sys.exit(1)
           elif fail > 0:
               print(f"⚠️  {fail} 个规则失败，但 {success} 个成功，继续生成产物")
+
+          # ── 生成 ProxyAll 合并文件 ────────────────────────────────
+          all_domain_lines  = list(dict.fromkeys(all_domain_lines))
+          all_ip_lines      = list(dict.fromkeys(all_ip_lines))
+          all_keyword_lines = list(dict.fromkeys(all_keyword_lines))
+          print(f"\n{'─'*55}")
+          print(f"[ProxyAll] 合并所有非-Lan 规则集...")
+          print(f"  domain: {len(all_domain_lines)} 条 / ip: {len(all_ip_lines)} 条 / keyword: {len(all_keyword_lines)} 条")
+
+          if all_domain_lines:
+              tmp = "/tmp/ProxyAll-domain.yaml"
+              with open(tmp, "w") as f:
+                  f.write(build_yaml(all_domain_lines))
+              size = convert(tmp, "./mrs/ProxyAll-domain.mrs", "domain")
+              if size:
+                  print(f"  ✅ ProxyAll-domain.mrs ({size} bytes, {len(all_domain_lines)} 条)")
+
+          if all_ip_lines:
+              tmp = "/tmp/ProxyAll-ip.yaml"
+              with open(tmp, "w") as f:
+                  f.write(build_yaml(all_ip_lines))
+              size = convert(tmp, "./mrs/ProxyAll-ip.mrs", "ipcidr")
+              if size:
+                  print(f"  ✅ ProxyAll-ip.mrs ({size} bytes, {len(all_ip_lines)} 条)")
+
+          if all_keyword_lines:
+              with open("./mrs/ProxyAll-keyword.yaml", "w") as f:
+                  f.write(build_yaml(all_keyword_lines))
+              print(f"  ✅ ProxyAll-keyword.yaml ({len(all_keyword_lines)} 条)")
           PYEOF
 
       # ── 生成清单 + rule-providers 配置片段 ──────────────────────────────
