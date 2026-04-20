@@ -1,0 +1,197 @@
+# 自动生成 buildtime=2026-04-21 06:37  repo=hutufeng/rule.Clash
+# 将以下内容合并到你的 clash-verge-rev 配置中
+
+rule-providers:
+
+  Anthropic:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Anthropic.mrs"
+    path: ./providers/Anthropic.mrs
+    interval: 86400
+
+  Bing:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Bing.mrs"
+    path: ./providers/Bing.mrs
+    interval: 86400
+
+  Claude:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Claude.mrs"
+    path: ./providers/Claude.mrs
+    interval: 86400
+
+  Copilot:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Copilot.mrs"
+    path: ./providers/Copilot.mrs
+    interval: 86400
+
+  Gemini:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Gemini.mrs"
+    path: ./providers/Gemini.mrs
+    interval: 86400
+
+  GitHub:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/GitHub.mrs"
+    path: ./providers/GitHub.mrs
+    interval: 86400
+
+  GlobalProxy-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/GlobalProxy-domain.mrs"
+    path: ./providers/GlobalProxy-domain.mrs
+    interval: 86400
+
+  GlobalProxy-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/GlobalProxy-ip.mrs"
+    path: ./providers/GlobalProxy-ip.mrs
+    interval: 86400
+
+  Google-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Google-domain.mrs"
+    path: ./providers/Google-domain.mrs
+    interval: 86400
+
+  Google-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Google-ip.mrs"
+    path: ./providers/Google-ip.mrs
+    interval: 86400
+
+  GoogleFCM:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/GoogleFCM.mrs"
+    path: ./providers/GoogleFCM.mrs
+    interval: 86400
+
+  Lan-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Lan-domain.mrs"
+    path: ./providers/Lan-domain.mrs
+    interval: 86400
+
+  Lan-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Lan-ip.mrs"
+    path: ./providers/Lan-ip.mrs
+    interval: 86400
+
+  Microsoft:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Microsoft.mrs"
+    path: ./providers/Microsoft.mrs
+    interval: 86400
+
+  OpenAI:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/OpenAI.mrs"
+    path: ./providers/OpenAI.mrs
+    interval: 86400
+
+  ProxyAll-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/ProxyAll-domain.mrs"
+    path: ./providers/ProxyAll-domain.mrs
+    interval: 86400
+
+  ProxyAll-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/ProxyAll-ip.mrs"
+    path: ./providers/ProxyAll-ip.mrs
+    interval: 86400
+
+  Telegram-domain:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Telegram-domain.mrs"
+    path: ./providers/Telegram-domain.mrs
+    interval: 86400
+
+  Telegram-ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Telegram-ip.mrs"
+    path: ./providers/Telegram-ip.mrs
+    interval: 86400
+
+  Twitter:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/Twitter.mrs"
+    path: ./providers/Twitter.mrs
+    interval: 86400
+
+  YouTube:
+    type: http
+    behavior: domain
+    format: mrs
+    url: "https://github.com/hutufeng/rule.Clash/raw/mrs/YouTube.mrs"
+    path: ./providers/YouTube.mrs
+    interval: 86400
+
+
+rules:
+  - RULE-SET,Anthropic,Proxy
+  - RULE-SET,Bing,Proxy
+  - RULE-SET,Claude,Proxy
+  - RULE-SET,Copilot,Proxy
+  - RULE-SET,Gemini,Proxy
+  - RULE-SET,GitHub,Proxy
+  - RULE-SET,GlobalProxy-domain,Proxy
+  - RULE-SET,GlobalProxy-ip,Proxy
+  - RULE-SET,Google-domain,Proxy
+  - RULE-SET,Google-ip,Proxy
+  - RULE-SET,GoogleFCM,Proxy
+  - RULE-SET,Lan-domain,DIRECT
+  - RULE-SET,Lan-ip,DIRECT
+  - RULE-SET,Microsoft,Proxy
+  - RULE-SET,OpenAI,Proxy
+  - RULE-SET,ProxyAll-domain,Proxy
+  - RULE-SET,ProxyAll-ip,Proxy
+  - RULE-SET,Telegram-domain,Proxy
+  - RULE-SET,Telegram-ip,Proxy
+  - RULE-SET,Twitter,Proxy
+  - RULE-SET,YouTube,Proxy
+  - MATCH,DIRECT
