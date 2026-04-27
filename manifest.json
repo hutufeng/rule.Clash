@@ -1,0 +1,111 @@
+{
+  "build_time": "2026-04-28 06:43",
+  "repo": "hutufeng/rule.Clash",
+  "files": [
+    {
+      "file": "Anthropic.mrs",
+      "size_bytes": 117,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Anthropic.mrs"
+    },
+    {
+      "file": "Bing.mrs",
+      "size_bytes": 175,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Bing.mrs"
+    },
+    {
+      "file": "Claude.mrs",
+      "size_bytes": 97,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Claude.mrs"
+    },
+    {
+      "file": "Copilot.mrs",
+      "size_bytes": 691,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Copilot.mrs"
+    },
+    {
+      "file": "Gemini.mrs",
+      "size_bytes": 208,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Gemini.mrs"
+    },
+    {
+      "file": "GitHub.mrs",
+      "size_bytes": 466,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/GitHub.mrs"
+    },
+    {
+      "file": "GlobalProxy-domain.mrs",
+      "size_bytes": 48521,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/GlobalProxy-domain.mrs"
+    },
+    {
+      "file": "GlobalProxy-ip.mrs",
+      "size_bytes": 679,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/GlobalProxy-ip.mrs"
+    },
+    {
+      "file": "Google-domain.mrs",
+      "size_bytes": 6198,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Google-domain.mrs"
+    },
+    {
+      "file": "Google-ip.mrs",
+      "size_bytes": 97,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Google-ip.mrs"
+    },
+    {
+      "file": "GoogleFCM.mrs",
+      "size_bytes": 198,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/GoogleFCM.mrs"
+    },
+    {
+      "file": "Lan-domain.mrs",
+      "size_bytes": 698,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Lan-domain.mrs"
+    },
+    {
+      "file": "Lan-ip.mrs",
+      "size_bytes": 155,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Lan-ip.mrs"
+    },
+    {
+      "file": "Microsoft.mrs",
+      "size_bytes": 6956,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Microsoft.mrs"
+    },
+    {
+      "file": "OpenAI.mrs",
+      "size_bytes": 533,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/OpenAI.mrs"
+    },
+    {
+      "file": "ProxyAll-domain.mrs",
+      "size_bytes": 62082,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/ProxyAll-domain.mrs"
+    },
+    {
+      "file": "ProxyAll-ip.mrs",
+      "size_bytes": 858,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/ProxyAll-ip.mrs"
+    },
+    {
+      "file": "Telegram-domain.mrs",
+      "size_bytes": 310,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Telegram-domain.mrs"
+    },
+    {
+      "file": "Telegram-ip.mrs",
+      "size_bytes": 143,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Telegram-ip.mrs"
+    },
+    {
+      "file": "Twitter.mrs",
+      "size_bytes": 324,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/Twitter.mrs"
+    },
+    {
+      "file": "YouTube.mrs",
+      "size_bytes": 1352,
+      "url": "https://github.com/hutufeng/rule.Clash/raw/mrs/YouTube.mrs"
+    }
+  ]
+}
